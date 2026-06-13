@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -353,7 +354,7 @@
           <div class="exp-dot-col"><div class="exp-dot"></div><div class="exp-line"></div></div>
           <div class="exp-content">
             <div class="exp-header">
-              <div><div class="exp-role">Jefe de Almacén</div><div class="exp-company">Grupo Olano SAC (Goodyear / Gulf / Lys / Bosch) — Trujillo</div></div>
+              <div><div class="exp-role">Jefe de Almacén</div><div class="exp-company">Grupo Olano SAC (Goodyear , Gulf , Lys , Bosch) — Trujillo</div></div>
               <span class="exp-date">Mar 2011 — Mar 2012</span>
             </div>
             <div class="exp-desc">Custodia y control de materiales. Supervisión de personal a cargo (4 personas). Entrada y salida de equipos, codificación, programación anual de adquisiciones y organización del almacén.</div>
@@ -689,20 +690,41 @@ function downloadPDF() {
 
   window.addEventListener('load', function() {
     try { startReading(); } catch (e) { console.log('No se pudo iniciar el audio automaticamente:', e); }
+    // "Despertar" el motor de voz para que cargue las voces antes del primer toque (iOS/Android)
+    try {
+      const synth = window.speechSynthesis;
+      if (synth) {
+        const warm = new SpeechSynthesisUtterance('');
+        synth.speak(warm);
+        synth.cancel();
+        synth.getVoices();
+      }
+    } catch (e) {}
   });
 
   // En moviles (Android/iOS), los navegadores bloquean el audio/voz automatico
-  // hasta que el usuario interactua con la pagina. Cubrimos todos los tipos
-  // de interaccion posibles para iniciar el audio en el primer toque.
+  // hasta que el usuario interactua con la pagina, Y la primera llamada a
+  // speechSynthesis.speak() debe hacerse DENTRO del mismo evento de toque
+  // (sin setTimeout, sin async), o el navegador la ignora silenciosamente.
   function onFirstInteraction() {
-    if (!started) startReading();
+    if (started) return;
+    const synth = window.speechSynthesis;
+    if (synth) {
+      // Llamada sincronica inmediata dentro del gesto del usuario para
+      // "desbloquear" el audio en iOS/Android.
+      synth.resume();
+      const unlock = new SpeechSynthesisUtterance('');
+      unlock.volume = 0;
+      synth.speak(unlock);
+    }
+    startReading();
     document.removeEventListener('click', onFirstInteraction);
     document.removeEventListener('touchstart', onFirstInteraction);
     document.removeEventListener('touchend', onFirstInteraction);
     document.removeEventListener('pointerdown', onFirstInteraction);
   }
   document.addEventListener('click', onFirstInteraction, { once: true });
-  document.addEventListener('touchstart', onFirstInteraction, { once: true, passive: true });
+  document.addEventListener('touchstart', onFirstInteraction, { once: true });
   document.addEventListener('touchend', onFirstInteraction, { once: true });
   document.addEventListener('pointerdown', onFirstInteraction, { once: true });
 
